@@ -130,8 +130,8 @@ class assign_submission_forum extends assign_submission_plugin {
         } else {
             foreach ($posts as $post) {
                 $discussion = $DB->get_record('forum_discussions', array('id' => $post->discussion), '*', MUST_EXIST);
-                $posttext .= forum_print_post($post, $discussion, $forum, $cm, $course,
-                    false, false, false, "", "", null, true, null, true);
+                $posttext .= $this->forum_print_post($post, $discussion, $forum, $cm, $course,
+                    false, false, false, false, false, false, false, "", "", null, true, null, true);
             }
         }
         $data->forum = $posttext;
@@ -206,7 +206,7 @@ class assign_submission_forum extends assign_submission_plugin {
             foreach ($posts as $post) {
                 $discussion = $DB->get_record('forum_discussions', array('id' => $post->discussion), '*', MUST_EXIST);
                 $posttext .= $this->forum_print_post($post, $discussion, $forum, $cm, $course,
-                    false, false, false, "", "", null, true, null, true);
+                    false, false, false, false, false, false, false, "", "", null, true, null, true);
             }
         }
 
@@ -516,6 +516,10 @@ class assign_submission_forum extends assign_submission_plugin {
      * @param object $course
      * @param boolean $ownpost Whether this post belongs to the current user.
      * @param boolean $reply Whether to print a 'reply' link at the bottom of the message.
+     * @param boolean $edit Whether to print a 'edit' link at the bottom of the message.
+     * @param boolean $delete Whether to print a 'delete' link at the bottom of the message.
+     * @param boolean $split Whether to print a 'split' link at the bottom of the message.
+     * @param boolean $export Whether to print a 'export to...' link at the bottom of the message.
      * @param boolean $link Just print a shortened version of the post as a link to the full post.
      * @param string $footer Extra stuff to print after the message.
      * @param string $highlight Space-separated list of terms to highlight.
@@ -529,7 +533,8 @@ class assign_submission_forum extends assign_submission_plugin {
      * @param bool|null $istracked
      * @return void
      */
-    private function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=false, $reply=false, $link=false,
+    private function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=false, $reply=false,
+                                      $edit=false, $delete=false, $split=false, $export=false, $link=false,
                               $footer="", $highlight="", $postisread=null, $dummyifcantsee=true, $istracked=null, $return=false) {
         global $USER, $CFG, $OUTPUT;
 
@@ -696,23 +701,23 @@ class assign_submission_forum extends assign_submission_plugin {
             $age = 0;
         }
 
-        if ($forum->type == 'single' and $discussion->firstpost == $post->id) {
+        if ($forum->type == 'single' and $discussion->firstpost == $post->id and $edit) {
             if (has_capability('moodle/course:manageactivities', $modcontext)) {
                 // The first post in single simple is the forum description.
                 $commands[] = array('url' => new moodle_url('/course/modedit.php',
                     array('update' => $cm->id, 'sesskey' => sesskey(), 'return' => 1)), 'text' => $str->edit);
             }
-        } else if (($ownpost && $age < $CFG->maxeditingtime) || $cm->cache->caps['mod/forum:editanypost']) {
+        } else if ($edit && (($ownpost && $age < $CFG->maxeditingtime) || $cm->cache->caps['mod/forum:editanypost'])) {
             $commands[] = array('url' => new moodle_url('/mod/forum/post.php', array('edit' => $post->id)), 'text' => $str->edit);
         }
 
-        if ($cm->cache->caps['mod/forum:splitdiscussions'] && $post->parent && $forum->type != 'single') {
+        if ($split && $cm->cache->caps['mod/forum:splitdiscussions'] && $post->parent && $forum->type != 'single') {
             $commands[] = array('url' => new moodle_url('/mod/forum/post.php',
                 array('prune' => $post->id)), 'text' => $str->prune, 'title' => $str->pruneheading);
         }
 
-        if (($ownpost && $age < $CFG->maxeditingtime && $cm->cache->caps['mod/forum:deleteownpost']) ||
-            $cm->cache->caps['mod/forum:deleteanypost']) {
+        if ($delete && (($ownpost && $age < $CFG->maxeditingtime && $cm->cache->caps['mod/forum:deleteownpost']) ||
+            $cm->cache->caps['mod/forum:deleteanypost'])) {
             $commands[] = array('url' => new moodle_url('/mod/forum/post.php',
                 array('delete' => $post->id)), 'text' => $str->delete);
         }
@@ -722,8 +727,8 @@ class assign_submission_forum extends assign_submission_plugin {
                 array('reply' => $post->id)), 'text' => $str->reply);
         }
 
-        if ($CFG->enableportfolios && ($cm->cache->caps['mod/forum:exportpost']
-                || ($ownpost && $cm->cache->caps['mod/forum:exportownpost']))) {
+        if ($export && ($CFG->enableportfolios && ($cm->cache->caps['mod/forum:exportpost']
+                || ($ownpost && $cm->cache->caps['mod/forum:exportownpost'])))) {
             $p = array('postid' => $post->id);
             require_once($CFG->libdir.'/portfoliolib.php');
             $button = new portfolio_add_button();
