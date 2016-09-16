@@ -81,9 +81,18 @@ class assign_submission_forum extends assign_submission_plugin {
 
         $name = get_string('forumtoeval', 'assignsubmission_forum');
         $mform->addElement('select', 'assignsubmission_forum_forumtoeval', $name, $options);
+        $mform->addHelpButton('assignsubmission_forum_forumtoeval',
+            'forumtoeval',
+            'assignsubmission_forum');
         $mform->disabledIf('assignsubmission_forum_forumtoeval',
             'assignsubmission_forum_enabled',
             'notchecked');
+
+        if (!$options) {
+            // Hidden element added to disable forum submission checkbox on empty $options.
+            $mform->addElement('hidden', 'forums_available', !!$options);
+            $mform->disabledIf('assignsubmission_forum_enabled', 'forums_available', 'neq', true);
+        }
     }
 
     /**
