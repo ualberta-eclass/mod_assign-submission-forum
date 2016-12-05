@@ -81,6 +81,13 @@ class assign_submission_forum extends assign_submission_plugin {
 
         $name = get_string('forumtoeval', 'assignsubmission_forum');
         $mform->addElement('select', 'assignsubmission_forum_forumtoeval', $name, $options);
+
+        $setforumid = $this->get_config('forumid');
+        // Set default if forum is set and still exists.
+        if (!is_bool($setforumid) && array_key_exists($setforumid, $options)) {
+            $mform->setDefault('assignsubmission_forum_forumtoeval', $setforumid);
+        }
+
         $mform->addHelpButton('assignsubmission_forum_forumtoeval',
             'forumtoeval',
             'assignsubmission_forum');
@@ -91,7 +98,10 @@ class assign_submission_forum extends assign_submission_plugin {
         if (!$options) {
             // Hidden element added to disable forum submission checkbox on empty $options.
             $mform->addElement('hidden', 'forums_available', !!$options);
-            $mform->disabledIf('assignsubmission_forum_enabled', 'forums_available', 'neq', true);
+            $mform->setType('forums_available', PARAM_BOOL);
+            $mform->disabledIf('assignsubmission_forum_enabled', 'forums_available', 'neq', 1);
+            // Set checkbox to unchecked (in case forum selected, all forums deleted, and then editing).
+            $mform->setDefault('assignsubmission_forum_enabled', 0);
         }
     }
 
